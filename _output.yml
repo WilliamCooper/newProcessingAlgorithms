@@ -1,0 +1,23 @@
+bookdown::gitbook:
+  css: style.css
+  config:
+    toc:
+      before: |
+        <li><a href="./">RAF Processing Algorithms</a></li>
+      after: |
+        <li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
+    edit: https://github.com/USERNAME/REPO/edit/BRANCH/%s
+    download: ["pdf", "epub"]
+bookdown::pdf_book:
+  includes:
+    in_header: preamble.tex
+  latex_engine: xelatex
+  citation_package: natbib
+  keep_tex: yes
+  abstract: |
+    This report documents the algorithms used to produce the data archives 
+    resulting from research projects that use the NSF/NCAR research aircraft 
+    operated by the Research Aviation Facility, Earth Observing Laboratory, 
+    National Center for Atmospheric Research. 
+bookdown::epub_book: default
+

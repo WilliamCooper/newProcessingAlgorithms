@@ -1,0 +1,44 @@
+--- 
+title: "RAF Technical Note: Processing Algorithms"
+subtitle: |
+  | Descriptions of the Variables in the Data Archives
+author: |
+  | Research Aviation Facility, Earth Observing Laboratory
+  | National Center for Atmospheric Research, Boulder CO 80307, USA
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+documentclass: book
+bibliography: [book.bib, packages.bib]
+# url: your book url like https://bookdown.org/yihui/bookdown
+# cover-image: path to the social sharing image like images/cover.jpg
+description: |
+  This report describes the algorithms used at the NCAR/EOL/RAF to process
+  the measurements made from the NSF/NCAR research aircraft.
+link-citations: yes
+github-repo: WilliamCooper/ProcessingAlgorithms
+output: 
+  html_document: 
+    theme: readable
+    toc: true
+    toc_float: true
+---
+
+# Abstract {-#index}
+    This report documents the algorithms used to produce the data archives 
+    resulting from research projects that use the NSF/NCAR research aircraft 
+    operated by the Research Aviation Facility, Earth Observing Laboratory, 
+    National Center for Atmospheric Research. 
+
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE)
+library(kableExtra)
+```
+
+```{r include=FALSE}
+# automatically create a bib database for R packages
+knitr::write_bib(c(
+  .packages(), 'bookdown', 'knitr', 'rmarkdown'
+), 'packages.bib')
+```

@@ -1,0 +1,199 @@
+# Introduction
+
+## Background Information
+
+This technical report defines the variables used in data sets that are collected by the research aircraft operated by the Research Aviation Facility (RAF) of the National Center for Atmospheric Research. Where appropriate, it also documents the equations that are used by the processing software (currently “nimbus”) to calculate the derived measurements that result from the use of one or more other basic measurements (e.g., potential temperature). Since 1993, data from research flights have been archived in NetCDF format (cf. <a href="http://www.unidata.ucar.edu/software/netcdf/docs/">http://www.unidata.ucar.edu/software/netcdf/docs/</a>), and the NetCDF header for recent projects includes detailed information on the measurements present in the file, how they depend on other measurements, units, etc. The conventions that the RAF uses for NetCDF data files are documented at <a href=" http://www.eol.ucar.edu/raf/Software/netCDF.html "> http://www.eol.ucar.edu/raf/Software/netCDF.html </a>.  
+
+This document should change as changes in processing algorithms are implemented, but the intent is also to provide a history of algorithms that have been used, so there is an effort to document how historical data files were processed along with the descriptions of current algorithms. Unlike some technical reports, this document is likely to change over time and should provide a history extending back to <a href="https://opensky.ucar.edu/islandora/object/archives%3A8729">RAF Bulletin 9</a>, which documented the processing algorithms as they existed before about 2003.  
+
+Currently, the data acquisition process on the research aircraft of the Research Aviation Facility, Earth Observing Laboratory, proceeds as follows:  
+
+1. Analog or digital outputs from instruments are sampled at regular intervals, typically 50 Hz when possible. Analog outputs are converted to digital values via analog-to-digital converters. The investigators' handbooks for each aircraft describe this process in detail, including resolution of the sampling and handling of the results. Often, signals from user-supplied instruments are also included in the measured values that are handled by the data system.  
+2. The digital outputs are then recorded by the data system on the aircraft. Currently, this is a task of the ["NIDAS"](http://www.eol.ucar.edu/data/software/nidas) system described below. That system also controls the sampling, time stamps, and other aspects of data recording.  
+3. In flight, the data are processed by the *“nimbus”* data processing program, which makes them available for display via ["aeros"](http://www.eol.ucar.edu/raf/Software/aeros_dnld.html) for real-time monitoring of measurements.  
+4. Following the flight, *nimbus* again processes the data. At this stage, measurements can be re-sampled with averaging and/or interpolation to produce various data rates, usually 1 Hz or 25 Hz, and known lags in measurements can be introduced to adjust measurements to a common time basis. As part of this processing, *nimbus* applies calibration coefficients where appropriate to convert recorded values (e.g., voltage) to engineering units (e.g., $^\circ$C). Determining or checking these calibration coefficients is part of the pre-flight and post-flight procedures for each project.  
+5. The output from *nimbus* is the data file that is the permanent archive from the experiment, often after merging in additional data sets from users that are not recorded in the original data file produced by *NIDAS.* These files, in NetCDF format, have headers that contain metadata on each measurement (such as the calibration coefficients, the instrument that produced the measurement, etc.). Many of the variables in these files are discussed in this technical note, but the files may also include additional project-specific measurements for which the NetCDF header and the project reports will be the only documentation.  
+
+For assistance accessing data from RAF-supported projects, contact the RAF data management group via <a href="mailto:raf-dm%40eol.ucar.edu">this email address</a>.  
+
+```{r include = TRUE, echo = FALSE}
+## construct data.frame for the following table:
+DSYS <- data.frame("Data System" = c('ADS I', 'ADS II', 'ADS III (NIDAS)^[ADS III is the name given to the full data system, which includes these components: NIDAS (for data acquisition and recording); NIMBUS (for data processing, both in flight and after the flight); AEROS (for data display in flight); and the Mission Coordinator Station and satellite communications system (for transmission of data to and from the aircraft, display of such data for mission decisions, and support for written “chat” communications among project participants both on the aircraft and on the ground).]'))
+DSYS$start <- c('1984', '1992', '2005')
+DSYS$end <- c('1992', '2007', ' ')
+DSYS$aircraft <- c('King Air 200T, Sabreliner (1987), Electra (1991)', 'C-130', 'GV, C-130 after 2007')
+```
+The data system has changed several times over the history of RAF. For a discussion of the history of the data systems, see [this note](https://github.com/NCAR/aircraft_ProcessingAlgorithms/blob/master/www/ADSHistory.pdf) written by Richard Friesen. The versions of data systems that produced most of the data still available were, approximately, as given in the following table: 
+```{r include = TRUE}
+knitr::kable(DSYS, align=c('cccl')) %>% kable_styling(bootstrap_options = 'bordered') %>%
+  scroll_box(width='80%')
+```
+  
+Before 1993, data were processed by a different program, “GENPRO,” and a different output format (also named GENPRO) was used for archived datasets. Appendix E in [RAF Bulletin 9](https://opensky.ucar.edu/islandora/object/archives%3A8729), the previous description of RAF data products that is now superseded by this technical note, describes that format. Some variable names in this document, esp. in section \@ref(obsolete-variables), refer to obsolete variable names, some used with GENPRO and others referring to instruments that are now retired. These names are included here so that this report can be a reference for older archived data as well as for current data files.  
+
+## Alphabetical List of Variables
+
+At the end of this document, there is a list of all the variable names that appear in standard data files along with links to the primary discussion of those variables; see [Appendix B](/rmd_output/1/appendix-b-variable-names.html#variable-names). In some cases redundant measurements are present, often for key measurements like pressure or temperature. When these are used in subsequent calculation of derived variables like potential temperature, some choice is usually made regarding which measurement is considered most reliable for a particular project or flight, and a single derived variable is calculated on the basis of the chosen input variable(s). To record which measurements were so designated, a reference measurement chosen from a group of redundant measurements usually has a variable name ending with the letter(s) X or XC.^[Some that do not follow this convention are ATTACK and SSLIP; see the individual descriptions that follow.] 
+To see the variables in a particular netCDF data file, use the command “ncdump -h file.nc”.  
+
+## Constants and Symbols {#constants-and-symbols}
+
+The following table contains values used for some constants in this document. For reference, the symbols used here and elsewhere in this document are defined in the List of Symbols near the end of the document (cf.\ [Appendix A](/rmd_output/1/appendix-a-list-of-symbols.html#list-of-symbols)). Where references are to the “NIST Chemistry WebBook”, the associated URL is <a href="http://webbook.nist.gov">http://webbook.nist.gov</a>. References to the CODATA Internationally recommended values of the Fundamental Physical Constants are available at <a href="http://physics.nist.gov/.cuu/.Constants">http://physics.nist.gov/.cuu/.Constants</a>. The optimization involved in adjustment of these coefficients is documented in [Mohr et al., 2008a](https://physics.nist.gov/cuu/pdf/RevModPhys_80_000633acc.pdf) and 2008b, referenced at that URL.^[P. J. Mohr, B. N. Taylor, and D. B. Newell, Rev. Mod. Phys 80(2), 633-730(2008); P. J. Mohr, B. N. Taylor, and D. B. Newell, J. Phys. Chem. Ref. Data 37(3), 1187-1284(2008).] 
+In this technical note, references to these symbols will often have these symbols or definitions marked by the symbol $^\dagger$ to indicate that the values used are the standard ones in the following table.  
+
+<blockquote><hr>
+<center> __[Values Used for "Constants"]{#constants-table}__ </center>  
+<br>
+$g$ = \label{-constant-g}\sindex[lis]{g@$g$= acceleration of gravity}acceleration
+of gravity$^{(a)}$ at latitude $\lambda$ \sindex[lis]{lambda@$\lambda$=latitude} and
+altitude\sindex[lis]{z@$z$ = height} $z$ above the WGS-84 \index{WGS-84 geoid}geoid,$^{(b)}$ 
+\begin{align}
+g(z,\lambda)=g_{e}\left(\frac{1+g_{1}\sin^{2}(\lambda)}{(1-g_{2}\sin^{2}\lambda)^{1/2}}\right)(1-(k_{1}-k_{2}\sin^{2}(\lambda))z+k_{3}z^{2})
+(\#eq:gsublambda)
+\end{align}  
+\ \ \ \ \ \ \ where $g_{e}=9.780327$\ m\ s$^{-2}$, $g_{1}=0.00193185$, $g_{2}=0.00669438$, and  
+\ \ \ \ \ \ \  {$k_{1},k_{2},k_{3}$} = {3.15704$\times 10^{-7}\mathrm{m}^{-1}$,
+2.10269$\times 10^{-9}\mathrm{m}^{-1}$, 7.37452$\times 10^{-14}\mathrm{m}^{-2}$}  
+$T_{0}$ = temperature in kelvin\sindex[lis]{T0@$T_{0}$=273.15\ K, temperature in kelvin corresponding to $0^{\circ}$C} corresponding to $0^{\circ}$C = 273.15\ K  
+$T_{3}$ = temperature\sindex[lis]{T3@$T_{3}$= triple point temperature of water}
+corresponding to the triple point of water\index{triple point of water}
+= 273.16\ K  
+$M_{d}$ = \sindex[lis]{Md@$M_{d}$= molecular weight of dry air}molecular
+weight of dry air$^{(a)}$\index{molecular weight!dry air}, 28.9637
+kg$\,$kmol$^{-1}$\ $^{(c)}$  
+$M_{w}$ = \sindex[lis]{Mw@$M_{w}$= molecular weight of water}molecular
+weight of water\index{molecular weight!water}, 18.0153 kg\ kmol$^{-1}$\ $^{(d)}$  
+$R_{0}$ = \sindex[lis]{R@$R_{0}$= universal gas constant}universal
+gas constant$^{a}$\index{universal gas constant}\index{gas constant!universal}
+= 8.314472$\times 10^{3}$ J\ kmol$^{-1}$K$^{-1}$\ $^{(e)}$\footnote{\label{fn:2006-CODATA}}  
+$N_{A}$ = Avogadro constant = 6.022141$\times 10^{26}$ molecules\ kmol$^{-1}$\index{Avogadro constant}\sindex[lis]{NA@$N_{A}$ = Avogadro constant, molecules per kmol}  
+$k=R_{0}/(\mathrm{N_{A})}=1.38065\times10^{-23}\mathrm{J}\,\mathrm{K}^{-1}$\sindex[lis]{k@$k$=Boltzmann Constant}\index{Boltzmann constant}  
+$R_{d}=(R_{0}/M_{d}$) = \sindex[lis]{Rd@$R_{d}=$gas constant for dry air}gas
+constant for dry air\index{gas constant!dry air}  
+$R_{w}$ = ($R_{0}/M_{w})$ = \sindex[lis]{Rw@$R_{W}$= gas constant for water vapor}gas
+constant for water vapor\index{gas constant!water vapor}  
+$R_{E}$ = \sindex[lis]{Re@$R_{E}$= radius of the Earth}radius of
+the Earth\index{radius of the Earth} = 6.371229$\times 10^{6}$m\ $^{(f)}$\footnote{ discussed
+in \@ref{sec:INS}}  
+$c_{p}$ = \sindex[lis]{cp@$c_{p}$ or $c_{pd}$ = specific heat of dry air at constant pressure}specific
+heat of dry air at constant pressure\index{specific heat!dry air!constant pressure}
+= $\frac{7}{2}R_{d}$ = 1.00473$\times10^{3}$ J\ kg$^{-1}$K$^{-1}$\ $^{(g)}$  
+$c_{v}$ = \sindex[lis]{cv@$c_{v}$ or $c_{vd}$ = specific heat of dry air at constant volume}specific
+heat of dry air at constant volume\index{specific heat!dry air!constant volume}
+= $\frac{5}{2}R_{d}$ = 0.71766$\times 10^{3}$ J\ kg$^{-1}$K$^{-1}$  
+\ \ \ \ \ *(specific heat values are at 0$^{\circ}$C; small variations
+with temperature are not included here)*  
+$\gamma$ = \sindex[lis]{gamma or gamma_{d} = ratio of specific heats of air, c_{p}/c_{v}@$\gamma$ or $\gamma_{d}$ = ratio of specific heats of air, $c_{p}/c_{v}$}ratio
+of specific heats\index{specific heat ratio, dry air}, $c_{p}/c_{v}$,
+taken to be 1.4 (dimensionless) for dry air  
+$\Omega$ = \sindex[lis]{Omega= angular rotation rate of the Earth@$\Omega$= angular rotation rate of the Earth}angular
+rotation rate of the Earth\index{Earth, angular rotation rate} =
+7.292115$\times10^{-5}$ radians/s  
+$\Omega_{Sch}$ = \sindex[lis]{Omega_{Sch}= angular frequency of the Schuler oscillation@$\Omega_{Sch}$= angular frequency of the Schuler oscillation}angular
+frequency of the Schuler oscillation\index{Schuler oscillation} =
+$\sqrt{\frac{g}{R_{E}}}$  
+$\sigma$ = \sindex[lis]{sigma= Stephan-Boltzmann constant@$\sigma$= Stephan-Boltzmann constant}Stephan-Boltzmann
+Constant\index{Stephan-Boltzmann Constant} = 5.6704$\times10^{-8}$W\ m$^{-2}$K$^{-4}$\ $^{(e)}$  
+```{r include = TRUE, echo = FALSE, eval = FALSE, results = 'asis'}
+cat('$g$ = \\label{-constant-g}\\sindex[lis]{g@$g$= acceleration of gravity}acceleration
+of gravity\ \ $^{(a)}$\\footnote{ } at latitude $\\lambda$ \\sindex[lis]{lambda@$\\lambda$=latitude}and
+altitude\\sindex[lis]{z@$z$ = height} $z$ above the WGS-84 \\index{WGS-84 geoid}geoid,\ \ $^{(b)}$\\footnote{}', '\\',
+'\\begin{align}',
+'g(z,\\lambda)=g_{e}\\left(\\frac{1+g_{1}\\sin^{2}(\\lambda)}{(1-g_{2}\\sin^{2}\\lambda)^{1/2}}\\right)(1-(k_{1}-k_{2}\\sin^{2}(\\lambda))z+k_{3}z^{2})  ',
+'\\ \\ \\ \\ \\ (1.1)  ',
+'\\end{align}',
+'\\ \\ \\ \\ \\ \\ \\ where $g_{e}=9.780327$\ m\ s$^{-2}$, $g_{1}=0.00193185$, $g_{2}=0.00669438$, and<br>
+\\ \\ \\ \\ \\ \\ \\  {$k_{1},k_{2},k_{3}$} = {3.15704$\\times 10^{-7}\\mathrm{m}^{-1}$,
+2.10269$\\times 10^{-9}\\mathrm{m}^{-1}$, 7.37452$\\times 10^{-14}\\mathrm{m}^{-2}$}',
+'<br>$T_{0}$ = temperature in kelvin\\sindex[lis]{T0@$T_{0}$=273.15\ K, temperature in kelvin corresponding to $0^{\\circ}$C} corresponding to $0^{\\circ}$C = 273.15\ K',
+'<br>$T_{3}$ = temperature\\sindex[lis]{T3@$T_{3}$= triple point temperature of water}
+corresponding to the triple point of water\\index{triple point of water}
+= 273.16\ K',
+'<br>',
+'$M_{d}$ = \\sindex[lis]{Md@$M_{d}$= molecular weight of dry air}molecular
+weight of dry air$^{(a)}$\\index{molecular weight!dry air}, 28.9637
+kg\ kmol$^{-1}\ \ $^{(c)}$\\footnote{}<br>',
+'$M_{w}$ = \\sindex[lis]{Mw@$M_{w}$= molecular weight of water}molecular
+weight of water\\index{molecular weight!water}, 18.0153 kg\ kmol$^{-1}$\ \ $^{(d)}$\\footnote{}',
+'<br>$R_{0}$ = \\sindex[lis]{R@$R_{0}$= universal gas constant}universal
+gas constant$^{a}$\\index{universal gas constant}\\index{gas constant!universal}
+= 8.314472$\\times 10^{3}$ J\ kmol$^{-1}$K$^{-1}$\ \ $^{(e)}$\\footnote{\\label{fn:2006-CODATA}}
+<br>$N_{A}$ = Avogadro constant = 6.022141$\\times 10^{26}$ molecules\ kmol$^{-1}$\\index{Avogadro constant}\\sindex[lis]{NA@$N_{A}$ = Avogadro constant, molecules per kmol}<br>',
+'$k=R_{0}/(\\mathrm{N_{A})}=1.38065\\times10^{-23}\\mathrm{J}\\,\\mathrm{K}^{-1}$\\sindex[lis]{k@$k$=Boltzmann Constant}\\index{Boltzmann constant}',
+'<br>$R_{d}=(R_{0}/M_{d}$) = \\sindex[lis]{Rd@$R_{d}=$gas constant for dry air}gas
+constant for dry air\\index{gas constant!dry air}<br>',
+'$R_{w}$ = ($R_{0}/M_{w})$ = \\sindex[lis]{Rw@$R_{W}$= gas constant for water vapor}gas
+constant for water vapor\\index{gas constant!water vapor}<br>',
+'$R_{E}$ = \\sindex[lis]{Re@$R_{E}$= radius of the Earth}radius of
+the Earth\\index{radius of the Earth} = 6.371229$\\times 10^{6}$m\ \ $^{(f)}$\\footnote{ discussed
+in \\@ref{sec:INS}}<br>',
+'$c_{p}$ = \\sindex[lis]{cp@$c_{p}$ or $c_{pd}$ = specific heat of dry air at constant pressure}specific
+heat of dry air at constant pressure\\index{specific heat!dry air!constant pressure}
+= $\\frac{7}{2}R_{d}$ = 1.00473$\\times10^{3}$ J\ kg$^{-1}$K$^{-1}$\ \ $^{(g)}$\\footnote{}<br>',
+'$c_{v}$ = \\sindex[lis]{cv@$c_{v}$ or $c_{vd}$ = specific heat of dry air at constant volume}specific
+heat of dry air at constant volume\\index{specific heat!dry air!constant volume}
+= $\\frac{5}{2}R_{d}$ = 0.71766$\\times 10^{3}$ J\ kg$^{-1}$K$^{-1}$<br>',
+'\\noindent\\parbox[t]{1\\textwidth}{%
+\\hskip0.6cm(specific heat values are at 0$^{\\circ}$C; small variations
+with temperature are not included here)%
+}<br>',
+'$\\gamma$ = \\sindex[lis]{gamma or gamma_{d} = ratio of specific heats of air, c_{p}/c_{v}@$\\gamma$ or $\\gamma_{d}$ = ratio of specific heats of air, $c_{p}/c_{v}$}ratio
+of specific heats\\index{specific heat ratio, dry air}, $c_{p}/c_{v}$,
+taken to be 1.4 (dimensionless) for dry air<br>',
+'$\\Omega$ = \\sindex[lis]{Omega= angular rotation rate of the Earth@$\\Omega$= angular rotation rate of the Earth}angular
+rotation rate of the Earth\\index{Earth, angular rotation rate} =
+7.292115$\\times10^{-5}$ radians/s<br>
+$\\Omega_{Sch}$ = \\sindex[lis]{Omega_{Sch}= angular frequency of the Schuler oscillation@$\\Omega_{Sch}$= angular frequency of the Schuler oscillation}angular
+frequency of the Schuler oscillation\\index{Schuler oscillation} =
+$\\sqrt{\\frac{g}{R_{E}}}$<br>
+$\\sigma$ = \\sindex[lis]{sigma= Stephan-Boltzmann constant@$\\sigma$= Stephan-Boltzmann constant}Stephan-Boltzmann
+Constant\\index{Stephan-Boltzmann Constant} = 5.6704$\\times10^{-8}$W\ m$^{-2}$K$^{-4}$\ \ $^{(e)}$'
+)
+```
+```{r echo=FALSE}
+## get the values for the table in footnote (c):
+fnc <- matrix(c('N~2~', 0.78102, 28.01340, 21.87903, 'O~2~', 0.20946, 31.99880, 6.70247,
+                'Ar', 0.00916, 39.94800, 0.36592, 'CO~2~', 0.00033, 44.00950, 0.01452))
+dim(fnc) <- c(4,4)
+fnc <- as.data.frame(t(fnc))
+names(fnc) <- c('Gas', 'mole fraction x', 'molecular weight M', 'x*M')
+meanValue <- round(sum(as.numeric(fnc[, 4])), 4)
+```
+\_\_\_\_\_\_\_\_\_\_<br>
+^(a)^ The International Standard Atmosphere specifies $g=9.80665$ m s^-2^,
+$M_{w}$=28.9644 and $R_{0}$ = 8.31432x10^3^ J kmol^-1^K^-1^,
+so these values are used to calculate pressure altitude.  
+^(b)^ cf. Moritz, H., 1988: Geodetic Reference System 1980, Bulletin Geodesique,
+Vol. 62 , no. 3, and [this link](https://earth-info.nga.mil/php/download.php?file=coord-wgs84).    
+^(c)^ Jones, F. E., 1978: J. Res. Natl. Bur. Stand., 83(5), 419, as quoted
+by Lemmon, E. W., R. T. Jacobsen, S. G. Penoncello, and D. G., Friend,
+J. Phys. Chem. Ref. Data, Vol. 29, No. 3, 2000, pp. 331-385. The quoted
+values of mole fraction are from Jones (1978) and the calculation of mean
+molecular weight is shown in the following table
+using values of molecular weights
+taken from the NIST Standard Reference Database 69: NIST Chemistry
+WebBook as of March 2011. With CO~2~ about 0.00041 (as in 2020) and others
+decreased proportionately, the mean is 28.9640.
+```{r include = TRUE, echo = FALSE}
+knitr::kable(fnc, format = 'html', caption = 'Calculation of the mean molecular weight of air',
+             table.attr = "style='width:70%;'")
+```
+\ \ \ \ \ \ \ \ \ \ The mean value is `r meanValue`, but see above for a more modern adjustment.<br><br>
+^(d)^ NIST Standard Reference Database 69: NIST Chemistry WebBook as of
+March 2011.<br>
+^(e)^ 2006 CODATA  
+^(f)^ matching the value used by the inertial reference systems, as discussed 
+in the "INS" section.  
+^(g)^ The specific heat of dry air at 1013 hPa and 250--280 K as given
+by Lemmon et al. (2000) is 29.13 J/(mol-K), which translates to $1005.8\pm 0.3$
+J/(kg-K). However, the uncertainty limit associated with values of
+specific heat is quoted as 1%, and the experimental data cited in
+that paper show scatter that is at least comparable to several tenths
+percent, so the ideal-gas value cited here is well within the range
+of uncertainty. For this reason, and because this value is in widespread
+use, the ideal-gas value is used throughout the algorithms described
+here.
+
+</blockquote>
+
+
