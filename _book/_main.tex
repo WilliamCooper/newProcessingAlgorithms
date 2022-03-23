@@ -13,8 +13,9 @@
 }
 \makeatother
 \subtitle{Descriptions of the Variables in the Data Archives}
-\author{RAF RSIG}
-\date{9 Feb 2019}
+\author{Research Aviation Facility, Earth Observing Laboratory\\
+National Center for Atmospheric Research, Boulder CO 80307, USA}
+\date{2022-03-23}
 
 \usepackage{amsmath,amssymb}
 \usepackage{lmodern}
@@ -49,7 +50,6 @@
 \IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
 \hypersetup{
   pdftitle={RAF Technical Note: Processing Algorithms},
-  pdfauthor={RAF RSIG},
   pdflang={en},
   hidelinks,
   pdfcreator={LaTeX via pandoc}}
@@ -3032,7 +3032,7 @@ ATX = ambient temperature {[}\(^{\circ}\)C{]}\\
 \label{eq:PFLWCbox1}
 \end{equation}
 \begin{equation}
-\mathrm{\{USFLWC\}}=\mathrm{\{USMPFLW\}}\frac{\mathrm{\{UPRESS/10\}}}{\mathrm{\{PSXC\}}}\frac{\mathrm{(\{ATX\}}+T_{0})}{T_{blk}}  
+\mathrm{\{USFLWC\}}=\mathrm{\{USMPFLW\}}\frac{\mathrm{\{UPRESS*10\}}}{\mathrm{\{PSXC\}}}\frac{\mathrm{(\{ATX\}}+T_{0})}{T_{blk}}  
 \label{eq:PFLWCbox2}
 \end{equation}
 
@@ -3270,6 +3270,11 @@ If~sin(\{SOLAZ\})~\textless~sin(\{SOLDE\})/sin(\(\phi):\)\\
 \mathrm{\{SOLAZ\}} = \pi/2-\mathrm{\{SOLAZ\}}
 \label{eq:SOLAZbox2}
 \end{equation}
+
+\hypertarget{experimental-variables}{%
+\chapter{Experimental Variables}\label{experimental-variables}}
+
+This document does not include experimental variables, conventionally denoted by variable names starting with 'X'. Project documentation should be consulted for such variables. Many projects also include measurements from instruments provided by investigators outside NCAR/RAF. Identification of those variables, and processing algorithms, are contained in the project documentation and/or the NETCDF headers.
 
 \hypertarget{obsolete-variables}{%
 \chapter{Obsolete Variables}\label{obsolete-variables}}
