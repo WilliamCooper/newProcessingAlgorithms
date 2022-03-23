@@ -1,4 +1,4 @@
-Fhis is an attempt to reproduce the ProcessingAlgorithms Technical Note in the R Markdown forman
+This is an attempt to reproduce the ProcessingAlgorithms Technical Note in the R Markdown format
 using **bookdown** (https://github.com/rstudio/bookdown). 
 
 Additional resources:
